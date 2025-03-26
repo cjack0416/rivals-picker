@@ -17,7 +17,8 @@ func main() {
 	if os.Getenv("ENV") != "production" {
 		err := godotenv.Load(".env")
 		if err != nil {
-			log.Fatal("Error loading .env file:", err)
+			log.Fatalf("Error loading .env file: %s", err)
+			os.Exit(1)
 		}
 	}
 
@@ -26,8 +27,11 @@ func main() {
 	dbURI := os.Getenv("DB_URI")
 	conn, err := pgx.Connect(context.Background(), dbURI)
 	if err != nil {
-		log.Fatal("Error connecting to database")
+		log.Fatalf("Error connecting to database: %s", err)
+		os.Exit(1)
 	}
+
+	defer conn.Close(context.Background())
 
 	log.Info("Successfully connected to database")
 
