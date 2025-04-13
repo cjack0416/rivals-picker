@@ -6,16 +6,10 @@ import (
 
 	"github.com/cjack0416/rivals-picker/api"
 	"github.com/cjack0416/rivals-picker/internal/tools"
+	m "github.com/cjack0416/rivals-picker/internal/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 )
-
-type Hero struct {
-	HeroId int
-	HeroName string
-	HeroRole string
-	HeroScore int
-}
 
 const duelist = "DUELIST"
 const vanguard = "VANGUARD"
@@ -26,9 +20,9 @@ func CompetitivePicker(c *fiber.Ctx) error {
 
 	var params = api.PickHeroesCompetitiveParams{}
 
-	m := c.Queries()
-	params.TeamHeroes = strings.Split(m["team_heroes"], ",")
-	params.EnemyHeroes = strings.Split(m["enemy_heroes"], ",")
+	q := c.Queries()
+	params.TeamHeroes = strings.Split(q["team_heroes"], ",")
+	params.EnemyHeroes = strings.Split(q["enemy_heroes"], ",")
 
 	log.Info("Making query in heroes table")
 	rows, err := conn.Query(context.Background(), "SELECT heroes.hero_id, heroes.hero_name, roles.role_name FROM heroes LEFT JOIN roles ON heroes.role_id = roles.role_id")
@@ -38,9 +32,9 @@ func CompetitivePicker(c *fiber.Ctx) error {
 	}
 	log.Info("Successfully made query from heroes table")
 
-	var heroPicks map[string]Hero = make(map[string]Hero)
+	var heroPicks map[string]m.Hero = make(map[string]m.Hero)
 	for rows.Next() {
-		var hero = Hero{}
+		var hero = m.Hero{}
 		err := rows.Scan(&hero.HeroId, &hero.HeroName, &hero.HeroRole)
 		if err != nil {
 			log.Error("Error scanning row: ", err)
@@ -56,7 +50,7 @@ func CompetitivePicker(c *fiber.Ctx) error {
 	return c.Status(200).JSON(heroPicks)
 }
 
-func filterHeroRoles(heroMap map[string]Hero, teamHeroes []string) map[string]Hero {
+func filterHeroRoles(heroMap map[string]m.Hero, teamHeroes []string) map[string]m.Hero {
 	var filterRoles map[string]int = map[string]int{duelist: 0, vanguard: 0, strategist: 0}
 
 	for _, hero := range teamHeroes {
@@ -70,7 +64,7 @@ func filterHeroRoles(heroMap map[string]Hero, teamHeroes []string) map[string]He
 		}
 	}
 
-	var filteredHeroMap map[string]Hero = make(map[string]Hero)
+	var filteredHeroMap map[string]m.Hero = make(map[string]m.Hero)
 
 	for _, hero := range heroMap {
 		if filterRoles[hero.HeroRole] < 3 {
@@ -82,8 +76,8 @@ func filterHeroRoles(heroMap map[string]Hero, teamHeroes []string) map[string]He
 	return filteredHeroMap
 }
 
-func filterTeamHeroes(heroMap map[string]Hero, teamHeroes []string) map[string]Hero {
-	var filteredHeroMap map[string]Hero = make(map[string]Hero)
+func filterTeamHeroes(heroMap map[string]m.Hero, teamHeroes []string) map[string]m.Hero {
+	var filteredHeroMap map[string]m.Hero = make(map[string]m.Hero)
 	var teamHeroMap map[string]string = make(map[string]string)
 
 	for _, heroName := range teamHeroes {
