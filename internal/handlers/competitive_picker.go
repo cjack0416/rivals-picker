@@ -38,7 +38,7 @@ func CompetitivePicker(c *fiber.Ctx) error {
 	}
 	log.Info("Successfully made query from heroes table")
 
-	var allHeroes map[string]Hero = make(map[string]Hero)
+	var heroPicks map[string]Hero = make(map[string]Hero)
 	for rows.Next() {
 		var hero = Hero{}
 		err := rows.Scan(&hero.HeroId, &hero.HeroName, &hero.HeroRole)
@@ -46,11 +46,12 @@ func CompetitivePicker(c *fiber.Ctx) error {
 			log.Error("Error scanning row: ", err)
 			return c.Status(500).JSON("{}")
 		}
-		allHeroes[hero.HeroName] = hero
+		heroPicks[hero.HeroName] = hero
 	}
-	log.Info("Result from heroes table query: ", allHeroes)
+	log.Info("Result from heroes table query: ", heroPicks)
 
-	var heroPicks map[string]Hero = filterHeroRoles(allHeroes, params.TeamHeroes)
+	heroPicks = filterHeroRoles(heroPicks, params.TeamHeroes)
+	heroPicks = filterTeamHeroes(heroPicks, params.TeamHeroes)
 
 	return c.Status(200).JSON(heroPicks)
 }
@@ -74,6 +75,24 @@ func filterHeroRoles(heroMap map[string]Hero, teamHeroes []string) map[string]He
 	for _, hero := range heroMap {
 		if filterRoles[hero.HeroRole] < 3 {
 			hero.HeroScore += 3 - filterRoles[hero.HeroRole]
+			filteredHeroMap[hero.HeroName] = hero
+		}
+	}
+
+	return filteredHeroMap
+}
+
+func filterTeamHeroes(heroMap map[string]Hero, teamHeroes []string) map[string]Hero {
+	var filteredHeroMap map[string]Hero = make(map[string]Hero)
+	var teamHeroMap map[string]string = make(map[string]string)
+
+	for _, heroName := range teamHeroes {
+		teamHeroMap[heroName] = heroName
+	}
+
+	for _, hero := range heroMap {
+		var _, ok = teamHeroMap[hero.HeroName]
+		if !ok {
 			filteredHeroMap[hero.HeroName] = hero
 		}
 	}
