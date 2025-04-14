@@ -9,3 +9,8 @@ type PickHeroesCompetitiveResponse struct {
 	HeroPick string `json:"heroPick"`
 	PickReasons []string `json:"pickReasons"`
 }
+
+type Error struct {
+	Code int `json:"code"`
+	Message string `json:"message"`
+}

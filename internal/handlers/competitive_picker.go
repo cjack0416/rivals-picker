@@ -21,6 +21,10 @@ func CompetitivePicker(c *fiber.Ctx) error {
 	params.EnemyHeroes = strings.Split(q["enemy_heroes"], ",")
 
 	heroPicks := tools.GetAllHeroes()
+	if len(heroPicks) == 0 {
+		resp := api.Error{Code: 500, Message: "All heroes cache is empty."}
+		return c.Status(500).JSON(resp)
+	}
 	heroPicks = filterHeroRoles(heroPicks, params.TeamHeroes)
 	heroPicks = filterTeamHeroes(heroPicks, params.TeamHeroes)
 
