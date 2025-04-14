@@ -8,7 +8,6 @@ import (
 	"github.com/cjack0416/rivals-picker/internal/tools"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 )
 
@@ -22,26 +21,18 @@ func main() {
 		}
 	}
 
-	log.Info("Connecting to database")
-
 	dbURI := os.Getenv("DB_URI")
-	conn, err := pgx.Connect(context.Background(), dbURI)
+	conn, err := tools.InitializeDatabaseConn(dbURI)
 	if err != nil {
-		log.Fatalf("Error connecting to database: %s", err)
 		os.Exit(1)
 	}
-
 	defer conn.Close(context.Background())
-
-	log.Info("Successfully connected to database")
 
 	app := fiber.New()
 
 	api := app.Group("/api")
 
 	heroPicker := api.Group("/hero-picker")
-
-	tools.SetDatabaseConn(conn)
 
 	heroPicker.Get("/competitive", handlers.CompetitivePicker)
 
