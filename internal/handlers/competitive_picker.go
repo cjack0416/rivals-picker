@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/cjack0416/rivals-picker/api"
-	"github.com/cjack0416/rivals-picker/internal/tools"
 	m "github.com/cjack0416/rivals-picker/internal/model"
+	"github.com/cjack0416/rivals-picker/internal/tools"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -20,15 +22,16 @@ func CompetitivePicker(c *fiber.Ctx) error {
 	params.TeamHeroes = strings.Split(q["team_heroes"], ",")
 	params.EnemyHeroes = strings.Split(q["enemy_heroes"], ",")
 
-	heroPicks := tools.GetAllHeroes()
-	if len(heroPicks) == 0 {
+	heroMap := tools.GetAllHeroes()
+	if len(heroMap) == 0 {
 		resp := api.Error{Code: 500, Message: "All heroes cache is empty."}
 		return c.Status(500).JSON(resp)
 	}
-	heroPicks = filterHeroRoles(heroPicks, params.TeamHeroes)
-	heroPicks = filterTeamHeroes(heroPicks, params.TeamHeroes)
+	heroMap = filterHeroRoles(heroMap, params.TeamHeroes)
+	heroMap = filterTeamHeroes(heroMap, params.TeamHeroes)
+	heroPicks := prioritizeHeroPicks(heroMap)
 
-	return c.Status(200).JSON(heroPicks)
+	return c.Status(200).JSON(heroPicks[0])
 }
 
 func filterHeroRoles(heroMap map[string]m.Hero, teamHeroes []string) map[string]m.Hero {
@@ -36,11 +39,12 @@ func filterHeroRoles(heroMap map[string]m.Hero, teamHeroes []string) map[string]
 
 	for _, hero := range teamHeroes {
 		heroRole := heroMap[hero].HeroRole
-		if heroRole == duelist {
+		switch heroRole {
+		case duelist:
 			filterRoles[duelist]++
-		} else if heroRole == vanguard {
+		case vanguard:
 			filterRoles[vanguard]++
-		} else {
+		case strategist:
 			filterRoles[strategist]++
 		}
 	}
@@ -73,4 +77,18 @@ func filterTeamHeroes(heroMap map[string]m.Hero, teamHeroes []string) map[string
 	}
 
 	return filteredHeroMap
+}
+
+func prioritizeHeroPicks(heroMap map[string]m.Hero) []m.Hero {
+	var heroPicks = slices.Collect(maps.Values(heroMap))
+
+	for i, hero := range heroPicks {
+		if (hero.HeroScore > heroPicks[0].HeroScore) {
+			temp := heroPicks[0]
+			heroPicks[0] = hero
+			heroPicks[i] = temp
+		}
+	}
+
+	return heroPicks
 }

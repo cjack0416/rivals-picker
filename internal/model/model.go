@@ -5,4 +5,5 @@ type Hero struct {
 	HeroName string
 	HeroRole string
 	HeroScore int
+	PickReasons []string
 }
