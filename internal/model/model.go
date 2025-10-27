@@ -7,3 +7,15 @@ type Hero struct {
 	HeroScore int
 	PickReasons []string
 }
+
+type EngineQueryResult interface {
+	AbilityCounterResult
+}
+
+type AbilityCounterResult struct {
+	HeroId int
+	AbilityName string
+	EnemyId int
+	EnemyAbilityName string
+	Weight int
+}
